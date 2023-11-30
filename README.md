@@ -22,3 +22,7 @@ Either the host is always player 1 and the client always player 2, or they alter
 This repo should contain extensively commented and functional code for the basic network applications described above.
 
 It is companion material to the talk I (Alex) will be giving to the Vancouver Island University Computer Science Club (and any other students who come!) on December 8th, 2023.
+
+# Link to slide deck
+
+https://docs.google.com/presentation/d/1gGqLmau01E0iQarwZY-gUGD6Hsx1pt-PrxeaQta59Uc/edit?usp=sharing
