@@ -1,7 +1,8 @@
-import socket, sys
+import socket
+import sys
 
-HOST = '0.0.0.0' # listen on all
-PORT = 39337 # 'man' decoded as base64
+HOST = '0.0.0.0'  # listen on all
+PORT = 39337  # 'man' decoded as base64
 
 # create INET, SOCK_STREAM socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,17 +73,18 @@ stages = [
 '''
 ]
 
+
 def uncover(word, coveredWord, letter):
     '''Takes in a word, a string of that word which has some letters
     covered by asterisks, and a letter to uncover. Replaces asterisks
     with the letter that should be there in the word.'''
-    
+
     if len(word) != len(coveredWord):
         print('uncover(): strings word and coveredWord should be of the same length.')
         return
-    
+
     newWord = ''
-    
+
     # For each letter in the word,
     for i in range(len(word)):
         # If it is the letter to uncover, add the letter
@@ -91,8 +93,9 @@ def uncover(word, coveredWord, letter):
         # Otherwise, add whatever was there, be it an irrelevant letter or an asterisk.
         else:
             newWord += coveredWord[i]
-    
+
     return newWord
+
 
 # Outer game loop, continues over different matches of Hangman.
 while True:
@@ -105,7 +108,7 @@ while True:
         incorrectGuesses = 0
         word = str(input())
         coveredWord = '.' * len(word)
-        
+
         # Guessing loop
         while True:
             # Check if player won
@@ -115,7 +118,7 @@ while True:
                 word = 'testwordshouldneverbeseen'
                 incorrectGuesses = 0
                 break
-            
+
             # Check if player lost
             if maxGuesses == incorrectGuesses:
                 client.send('-GAME OVER!\n'.encode('utf-8'))
@@ -135,9 +138,9 @@ while True:
 
             # get a guess from the client (word guesser)
             guess = client.recv(1024).decode('utf-8')
-            
+
             print(f'Player asks: Is there a {guess}?')
-            
+
             # check the guess against the word, making sure it's a single char
             if guess[0] in word:
                 coveredWord = uncover(word, coveredWord, guess)
@@ -147,8 +150,8 @@ while True:
             print(f'Player has {maxGuesses - incorrectGuesses} guesses left.')
 
         client.send('Play again? [y/n]'.encode('utf-8'))
-        
+
         playAgain = client.recv(1024).decode('utf-8')
-        
+
         if playAgain != 'y':
-            sys.exit(0)         
+            sys.exit(0)

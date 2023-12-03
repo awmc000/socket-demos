@@ -1,7 +1,8 @@
-import socket, sys
+import socket
+import sys
 
-HOST = '127.0.0.1' # loopback
-PORT = 39337 # 'man' decoded as base64
+HOST = '127.0.0.1'  # loopback
+PORT = 39337  # 'man' decoded as base64
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print(f'connecting to {HOST}:{PORT}..')
