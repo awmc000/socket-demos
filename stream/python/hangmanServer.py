@@ -108,7 +108,7 @@ while True:
 
             # construct the message
             # hangman graphic + coveredWord
-            message = getGraphic(guessesLeft) + '\n' + coveredWord
+            message = getGraphic(guessesLeft) + '\n' + coveredWord + '\n'
             # server side (word chooser) should see it too
             print(message)
 
@@ -128,7 +128,8 @@ while True:
             print(f'Player asks: Is there a {guess}?')
 
             # check the guess against the word, making sure it's a single char
-            if guess[0] in word:
+            guess = guess[0]
+            if guess in word:
                 coveredWord = uncover(word, coveredWord, guess)
             else:
                 incorrectGuesses += 1
