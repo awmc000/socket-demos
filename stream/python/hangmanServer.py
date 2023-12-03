@@ -7,9 +7,11 @@ PORT = 39337 # 'man' decoded as base64
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # bind
+print(f'attempting to bind to {HOST}:{PORT}')
 server.bind((HOST, PORT))
 
 # listen
+print(f'bind success; waiting for connection...')
 server.listen(5)
 
 # game variables
@@ -141,11 +143,9 @@ while True:
                 coveredWord = uncover(word, coveredWord, guess)
             else:
                 incorrectGuesses += 1
-            
-            
-            
-            print(f'The player has {maxGuesses - incorrectGuesses} guesses left.')
-        
+
+            print(f'Player has {maxGuesses - incorrectGuesses} guesses left.')
+
         client.send('Play again? [y/n]'.encode('utf-8'))
         
         playAgain = client.recv(1024).decode('utf-8')
