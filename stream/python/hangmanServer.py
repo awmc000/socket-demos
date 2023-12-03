@@ -5,6 +5,7 @@ import random
 HOST = '0.0.0.0'  # listen on all
 PORT = 39337  # 'man' decoded as base64
 HUMAN_SERVER = False  # is a human providing the words?
+EASY_MODE = True
 
 # a wordlist for nonhuman servers to use
 wordlist = ['alphabet', 'bravado', 'crunchy', 'delight', 'epistle', 'fearful', 'ghastly', 'heroine', 'incident', 'jugular', 'kentucky', 'lawless', 'mophead',
@@ -22,7 +23,7 @@ print(f'bind success; now listening')
 server.listen(5)
 
 # game parameters
-maxMistakes = 7
+maxMistakes = 7 if not EASY_MODE else 11
 
 
 def getGraphic(guesses_remaining):
@@ -46,6 +47,29 @@ def getGraphic(guesses_remaining):
         18,  # torso
         10  # head
     ]
+
+    if EASY_MODE:
+        # give man hands and feet
+        full = '''
+  ┌─══╗
+  O   ║
+_/|\_ ║
+_/ \_ ║
+╦╦╦╦╦╦╢
+'''
+        strokes = [
+            # note that each line of the full graphic is 7 chars followed by a newline
+            21,  # right hand
+            17,  # left hand
+            29,  # right foot
+            25,  # left foot
+            20,  # right arm
+            18,  # left arm
+            28,  # right leg
+            26,  # left leg
+            19,  # torso
+            11  # head
+        ]
 
     # erase the strokes that haven't been drawn yet
     partial = full
@@ -100,7 +124,7 @@ while True:
             print('Player declined offer to play again')
             client.close()
             client = None
-            break
+            continue
 
     if not word:
         print('Starting a new round!')
@@ -116,15 +140,16 @@ while True:
         continue
 
     guesses_remaining = maxMistakes - len(incorrectGuesses)
+    graphic = getGraphic(guesses_remaining)
     if guesses_remaining <= 0:
-        client.send(f'-GAME OVER! word was {word}\n'.encode('utf-8'))
+        client.send(
+            f'-{graphic}\nGAME OVER! word was {word}\n'.encode('utf-8'))
         print('Game over - guesser made too many mistakes!')
         word = None
         ask_playagain = True
         continue
 
     # construct the guess prompt
-    graphic = getGraphic(guesses_remaining)
     message = f'{graphic}\n{coveredWord}\n'
     if len(incorrectGuesses) > 0:
         formattedGuesses = ''.join(guess for guess in sorted(incorrectGuesses))
@@ -143,7 +168,7 @@ while True:
         print('connection abort.')
         client.close()
         client = None
-        break
+        continue
 
     # truncate guess to a single letter
     guess = guess[0]
