@@ -19,59 +19,34 @@ server.listen(5)
 incorrectGuesses = 0
 maxGuesses = 6
 
-# ASCII art
-# Decided to use 'O' instead of '☺ ' - it seems to be two chars wide, awkward
-stages = [
-    '''   
- ┌─═══╗
-      ║
-      ║
-      ║
-╦╦╦╦╦╦╢
-''',
-    '''   
- ┌─═══╗
- O    ║
-      ║
-      ║
-╦╦╦╦╦╦╢
-''',
-    '''   
- ┌─═══╗
- O    ║
- |    ║
-      ║
-╦╦╦╦╦╦╢
-''',
-    '''   
- ┌─═══╗
- O    ║
- |    ║
-/     ║
-╦╦╦╦╦╦╢
-''',
-    '''   
- ┌─═══╗
- O    ║
- |    ║
-/ \   ║
-╦╦╦╦╦╦╢
-''',
-    '''   
- ┌─═══╗
- O    ║
-/|    ║
-/ \   ║
-╦╦╦╦╦╦╢
-''',
-    '''   
+def getGraphic(guesses_remaining):
+    # ASCII art
+    # Decided to use 'O' instead of '☺ ' - it seems to be two chars wide, awkward
+    full = '''
  ┌─═══╗
  O    ║
 /|\   ║
 / \   ║
 ╦╦╦╦╦╦╢
 '''
-]
+
+    # strokes[0] is the last stroke of the man to draw
+    strokes = [
+        # note that each line of the full graphic is 7 chars followed by a newline
+        19,  # right arm
+        17,  # left arm
+        27,  # right leg
+        25,  # left leg
+        18,  # torso
+        10  # head
+    ]
+
+    # erase the strokes that haven't been drawn yet
+    partial = full
+    for stroke in strokes[:guesses_remaining]:
+        partial = partial[:stroke] + ' ' + partial[stroke + 1:]
+
+    return partial
 
 
 def uncover(word, coveredWord, letter):
@@ -127,9 +102,11 @@ while True:
                 incorrectGuesses = 0
                 break
 
+            guessesLeft = maxGuesses - incorrectGuesses
+
             # construct the message
             # hangman graphic + coveredWord
-            message = stages[incorrectGuesses] + '\n' + coveredWord
+            message = getGraphic(guessesLeft) + '\n' + coveredWord
             # server side (word chooser) should see it too
             print(message)
 
@@ -147,7 +124,7 @@ while True:
             else:
                 incorrectGuesses += 1
 
-            print(f'Player has {maxGuesses - incorrectGuesses} guesses left.')
+            print(f'Player has {guessesLeft} guesses left.')
 
         client.send('Play again? [y/n]'.encode('utf-8'))
 
