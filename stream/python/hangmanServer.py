@@ -12,12 +12,13 @@ print(f'attempting to bind to {HOST}:{PORT}')
 server.bind((HOST, PORT))
 
 # listen
-print(f'bind success; waiting for connection...')
+print(f'bind success; now listening')
 server.listen(5)
 
 # game variables
 incorrectGuesses = 0
 maxGuesses = 6
+
 
 def getGraphic(guesses_remaining):
     # ASCII art
@@ -75,10 +76,11 @@ def uncover(word, coveredWord, letter):
 # Outer game loop, continues over different matches of Hangman.
 while True:
     # accept connection
+    print('waiting for connection...')
     client, address = server.accept()
 
     # Inner game loop starts a match.
-    while True:
+    while client:
         print('Select the word for the other player to guess:')
         incorrectGuesses = 0
         word = str(input())
@@ -90,7 +92,7 @@ while True:
             if coveredWord == word:
                 client.send('-YOU WON!\n'.encode('utf-8'))
                 print('Guesser won!')
-                word = 'testwordshouldneverbeseen'
+                word = None
                 incorrectGuesses = 0
                 break
 
@@ -98,7 +100,7 @@ while True:
             if maxGuesses == incorrectGuesses:
                 client.send('-GAME OVER!\n'.encode('utf-8'))
                 print('Game over - guesser ran out of guesses!')
-                word = 'testwordshouldneverbeseen'
+                word = None
                 incorrectGuesses = 0
                 break
 
@@ -114,7 +116,14 @@ while True:
             client.send(message.encode('utf-8'))
 
             # get a guess from the client (word guesser)
+            print('Waiting for player guess...')
             guess = client.recv(1024).decode('utf-8')
+
+            if not guess:
+                print('connection abort.')
+                client.close()
+                client = None
+                break
 
             print(f'Player asks: Is there a {guess}?')
 
@@ -126,9 +135,15 @@ while True:
 
             print(f'Player has {guessesLeft} guesses left.')
 
+        if not client:
+            break
+
+        print('Offering to play again...')
         client.send('Play again? [y/n]'.encode('utf-8'))
 
         playAgain = client.recv(1024).decode('utf-8')
 
         if playAgain != 'y':
-            sys.exit(0)
+            print('Player declined offer to play again')
+            client.close()
+            client = None

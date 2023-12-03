@@ -10,27 +10,33 @@ s.connect((HOST, PORT))
 
 print('connect success!')
 
-while True:
-    message = s.recv(1024).decode('utf-8')
-    # If the message is "game over" or "you win", skip to the next message.
-    if (message == 'Play again?' and guessToSend != 'y'):
-        sys.exit(0)
-    elif (message == 'Play again?'):
-        message = 'test'
 
-    if message[0] == '-':
-        print(message)
-        message = s.recv(1024).decode('utf-8')
+def inputGuess():
+    print(f"[Enter a letter, or 'exit' to quit]:")
+    while True:
+        guess = input()
+        if guess == 'exit':
+            return guess
+        if guess.isalpha() and len(guess) == 1:
+            return guess
+        print('Enter exactly one letter of the alphabet, or \'exit\' to quit the game.')
+
+
+while s:
+    message = s.recv(1024).decode('utf-8')
+    if message.startswith('-'):
+        # some messages expect no response, these start with a hyphen.
+        print(message[1:])
+        continue
+    if message == '':
+        print('connection abort.')
+        break
+
     print(message)
 
-    print(f"[Enter a letter, or 'exit' to quit]:")
-    guessToSend = ''
-    while True:
-        guessToSend = input()
-        # stuff after 'or' redundant?
-        if guessToSend == 'exit' or (message == 'Play again?' and guessToSend != 'y'):
-            sys.exit(0)
-        if guessToSend.isalpha() and len(guessToSend) == 1:
-            break
-        print('Enter exactly one letter of the alphabet, or \'exit\' to quit the game.')
+    guessToSend = inputGuess()
+    if guessToSend == 'exit':
+        s.close()
+        s = None
+        break
     s.send(guessToSend.encode('utf-8'))
