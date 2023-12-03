@@ -1,7 +1,7 @@
 import socket, sys
 
-HOST = '192.168.0.13'
-PORT = int(sys.argv[1])
+HOST = '127.0.0.1' # loopback
+PORT = 39337 # 'man' decoded as base64
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))

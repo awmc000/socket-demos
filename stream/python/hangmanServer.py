@@ -1,8 +1,7 @@
 import socket, sys
 
-# Hardcoded - should grab own IP programmatically
-HOST = '192.168.0.13'
-PORT = int(sys.argv[1])
+HOST = '0.0.0.0' # listen on all
+PORT = 39337 # 'man' decoded as base64
 
 # create INET, SOCK_STREAM socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
