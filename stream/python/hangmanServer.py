@@ -21,9 +21,8 @@ server.bind((HOST, PORT))
 print(f'bind success; now listening')
 server.listen(5)
 
-# game variables
-incorrectGuesses = 0
-maxGuesses = 7
+# game parameters
+maxMistakes = 7
 
 
 def getGraphic(guesses_remaining):
@@ -83,78 +82,81 @@ def inputTargetWord():
         return random.choice(wordlist)
 
 
-# Outer game loop, continues over different matches of Hangman.
+client, address = None, None
+
 while True:
-    # accept connection
-    print('waiting for connection...')
-    client, address = server.accept()
+    if not client:
+        print('waiting for connection...')
+        client, address = server.accept()
 
-    # Inner game loop starts a match.
-    while client:
-        incorrectGuesses = 0
-        word = inputTargetWord()
-        coveredWord = cover(word)
+        word = None
+        incorrectGuesses = set()
+        ask_playagain = False
 
-        # Guessing loop
-        while True:
-            # Check if player won
-            if coveredWord == word:
-                client.send('-YOU WON!\n'.encode('utf-8'))
-                print('Guesser won!')
-                word = None
-                incorrectGuesses = 0
-                break
-
-            # Check if player lost
-            if maxGuesses == incorrectGuesses:
-                client.send(f'-GAME OVER! word was {word}\n'.encode('utf-8'))
-                print('Game over - guesser ran out of guesses!')
-                word = None
-                incorrectGuesses = 0
-                break
-
-            # construct the message
-            # hangman graphic + coveredWord
-            message = getGraphic(
-                maxGuesses - incorrectGuesses) + '\n' + coveredWord + '\n'
-            # server side (word chooser) should see it too
-            print(message)
-
-            # send to client side (word guesser)
-            client.send(message.encode('utf-8'))
-
-            # get a guess from the client (word guesser)
-            print('Waiting for player guess...')
-            guess = client.recv(1024).decode('utf-8')
-
-            if not guess:
-                print('connection abort.')
-                client.close()
-                client = None
-                break
-
-            # make sure it's a single char
-            guess = guess[0]
-
-            print(f'Player asks: Is there a {guess}?')
-
-            # check the guess against the word
-            newCoveredWord = uncover(word, coveredWord, guess)
-            if newCoveredWord == coveredWord:
-                incorrectGuesses += 1
-            coveredWord = newCoveredWord
-
-            print(f'Player has {maxGuesses - incorrectGuesses} guesses left.')
-
-        if not client:
-            break
-
-        print('Offering to play again...')
-        client.send('Play again? [y/n]'.encode('utf-8'))
-
-        playAgain = client.recv(1024).decode('utf-8')
-
-        if playAgain != 'y':
+    if ask_playagain:
+        ask_playagain = False
+        client.send('Play Again? [y/n]\n'.encode('utf-8'))
+        if not client.recv(1024).decode('utf-8').lower().startswith('y'):
             print('Player declined offer to play again')
             client.close()
             client = None
+            break
+
+    if not word:
+        print('Starting a new round!')
+        word = inputTargetWord()
+        coveredWord = cover(word)
+        incorrectGuesses = set()
+
+    if coveredWord == word:
+        client.send(f'-YOU WON! word was {word}\n'.encode('utf-8'))
+        print('Guesser won!')
+        word = None
+        ask_playagain = True
+        continue
+
+    guesses_remaining = maxMistakes - len(incorrectGuesses)
+    if guesses_remaining <= 0:
+        client.send(f'-GAME OVER! word was {word}\n'.encode('utf-8'))
+        print('Game over - guesser made too many mistakes!')
+        word = None
+        ask_playagain = True
+        continue
+
+    # construct the guess prompt
+    graphic = getGraphic(guesses_remaining)
+    message = f'{graphic}\n{coveredWord}\n'
+    if len(incorrectGuesses) > 0:
+        formattedGuesses = ''.join(guess for guess in sorted(incorrectGuesses))
+        message += f'already guessed: {formattedGuesses}\n'
+
+    # send prompt to client side (word guesser)
+    # server side (word chooser) should see it too
+    print(message)
+    client.send(message.encode('utf-8'))
+
+    # get a guess from the client (word guesser)
+    print('Waiting for player guess...')
+    guess = client.recv(1024).decode('utf-8')
+
+    if not guess:
+        print('connection abort.')
+        client.close()
+        client = None
+        break
+
+    # truncate guess to a single letter
+    guess = guess[0]
+
+    # say "an" if it guess' pronounciation starts with a vowel, else "a"
+    guess_an = 'an' if guess in [
+        'a', 'e', 'f', 'h', 'i', 'l', 'm', 'n', 'o', 'r', 's', 'x', 'y'] else 'a'
+    print(f'Guesser asks: Is there {guess_an} \'{guess}\'?')
+
+    # check the guess against the word
+    newCoveredWord = uncover(word, coveredWord, guess)
+    if newCoveredWord == coveredWord:
+        incorrectGuesses.add(guess.upper())
+    coveredWord = newCoveredWord
+
+    print(f'Guesser has {maxMistakes - len(incorrectGuesses)} mistakes left.')
