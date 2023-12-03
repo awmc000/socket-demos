@@ -1,8 +1,14 @@
 import socket
 import sys
+import random
 
 HOST = '0.0.0.0'  # listen on all
 PORT = 39337  # 'man' decoded as base64
+HUMAN_SERVER = False  # is a human providing the words?
+
+# a wordlist for nonhuman servers to use
+wordlist = ['alphabet', 'bravado', 'crunchy', 'delight', 'epistle', 'fearful', 'ghastly', 'heroine', 'incident', 'jugular', 'kentucky', 'lawless', 'mophead',
+            'neighbor', 'ointment', 'procure', 'quotient', 'rulebook', 'suppose', 'tyrannic', 'ucluelet', 'voyageur', 'wrought', 'xylitol', 'youthful', 'zoology']
 
 # create INET, SOCK_STREAM socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,7 +23,7 @@ server.listen(5)
 
 # game variables
 incorrectGuesses = 0
-maxGuesses = 6
+maxGuesses = 7
 
 
 def getGraphic(guesses_remaining):
@@ -50,27 +56,31 @@ def getGraphic(guesses_remaining):
     return partial
 
 
+def cover(word):
+    '''Takes in a word, replaces all latin letters with periods.
+    Leaves spaces, hyphens, underscores, etc.. untouched'''
+    return ''.join(('.' if c.isalpha() else c) for c in word)
+
+
 def uncover(word, coveredWord, letter):
     '''Takes in a word, a string of that word which has some letters
-    covered by asterisks, and a letter to uncover. Replaces asterisks
+    covered by periods, and a letter to uncover. Replaces periods
     with the letter that should be there in the word.'''
 
     if len(word) != len(coveredWord):
         print('uncover(): strings word and coveredWord should be of the same length.')
         return
 
-    newWord = ''
+    letter = letter.lower()
+    return ''.join((plain if plain.lower() == letter else covered) for plain, covered in zip(word, coveredWord))
 
-    # For each letter in the word,
-    for i in range(len(word)):
-        # If it is the letter to uncover, add the letter
-        if word[i] == letter:
-            newWord += letter
-        # Otherwise, add whatever was there, be it an irrelevant letter or an asterisk.
-        else:
-            newWord += coveredWord[i]
 
-    return newWord
+def inputTargetWord():
+    if HUMAN_SERVER:
+        print('Select the word for the other player to guess:')
+        return str(input())
+    else:
+        return random.choice(wordlist)
 
 
 # Outer game loop, continues over different matches of Hangman.
@@ -81,10 +91,9 @@ while True:
 
     # Inner game loop starts a match.
     while client:
-        print('Select the word for the other player to guess:')
         incorrectGuesses = 0
-        word = str(input())
-        coveredWord = '.' * len(word)
+        word = inputTargetWord()
+        coveredWord = cover(word)
 
         # Guessing loop
         while True:
@@ -98,17 +107,16 @@ while True:
 
             # Check if player lost
             if maxGuesses == incorrectGuesses:
-                client.send('-GAME OVER!\n'.encode('utf-8'))
+                client.send(f'-GAME OVER! word was {word}\n'.encode('utf-8'))
                 print('Game over - guesser ran out of guesses!')
                 word = None
                 incorrectGuesses = 0
                 break
 
-            guessesLeft = maxGuesses - incorrectGuesses
-
             # construct the message
             # hangman graphic + coveredWord
-            message = getGraphic(guessesLeft) + '\n' + coveredWord + '\n'
+            message = getGraphic(
+                maxGuesses - incorrectGuesses) + '\n' + coveredWord + '\n'
             # server side (word chooser) should see it too
             print(message)
 
@@ -125,16 +133,18 @@ while True:
                 client = None
                 break
 
+            # make sure it's a single char
+            guess = guess[0]
+
             print(f'Player asks: Is there a {guess}?')
 
-            # check the guess against the word, making sure it's a single char
-            guess = guess[0]
-            if guess in word:
-                coveredWord = uncover(word, coveredWord, guess)
-            else:
+            # check the guess against the word
+            newCoveredWord = uncover(word, coveredWord, guess)
+            if newCoveredWord == coveredWord:
                 incorrectGuesses += 1
+            coveredWord = newCoveredWord
 
-            print(f'Player has {guessesLeft} guesses left.')
+            print(f'Player has {maxGuesses - incorrectGuesses} guesses left.')
 
         if not client:
             break
