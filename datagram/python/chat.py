@@ -3,7 +3,7 @@ import threading
 import os
 
 server = socket.socket(socket.AF_INET , socket.SOCK_DGRAM )
-server.bind(("192.168.0.13",2023))
+server.bind(('127.0.0.1', 2023))
 print("UDP Chat based on code by Shubham Rasal")
 print("\nType 'quit' to exit.")
 
