@@ -4,7 +4,7 @@ import random
 
 HOST = '0.0.0.0'  # listen on all
 PORT = 39337  # 'man' decoded as base64
-HUMAN_SERVER = False  # is a human providing the words?
+HUMAN_SERVER = True  # is a human providing the words?
 EASY_MODE = True
 
 # a wordlist for nonhuman servers to use
